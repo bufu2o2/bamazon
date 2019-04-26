@@ -74,7 +74,7 @@ let customer = {
                         "JOIN bamazon.dept AS dept "+
                         "ON prod.department_name = dept.dept_name "+
                         "WHERE item_id = " + itemId);
-                        cl(pisql);
+                        //cl(pisql);
                         con.query(pisql, (e,r,f) => {
                             let r0 = r[0];
                             res({
@@ -135,7 +135,7 @@ let customer = {
         else{
             let buyAmt = await customer.buy.amt(parseInt(r.buy), parseInt(r.quant));
         }        
-        let done = await kill();
+        con.end();
     },
 }
     
@@ -143,36 +143,72 @@ let customer = {
 //=================================================================== manager object ===================================================================\\
 let manager = {
     auth: () => {
-        i.prompt([
-            {
-                name: "user",
-                message: "Username: ",
-                type: "input",
-            },
-            {
-                name: "pw",
-                message: "Password",
-                type: "password",
-                mask: "",
-            },
-        ]).then((r) => {
-            let un = r.user;
-            let pw = r.pw;
-            let check = "SELECT * FROM bamazon.auth WHERE username = ?";
-            let realpw;
-            con.query(check, [un], (e,r,f) => {
-                thrw(e);
-                realpw = r[0].pw;
-                if(realpw === pw){
-                    manager.main();
-                }
-                else{
-                    cl(ch.redBright.bold(br + hr + br + "Incorrect Pw" + br + hr + br));
-                    con.end();
-                }
-            });
-        });
+        return new Promise((res,rej) => {
+            let authRun = async () => {
+                let r = await i.prompt([
+                    {
+                        name: "user",
+                        message: "Username: ",
+                        type: "input",
+                    },
+                    {
+                        name: "pw",
+                        message: "Password",
+                        type: "password",
+                        mask: "",
+                    },
+                ]);
+                let un = r.user;
+                let pw = r.pw;
+                let check = "SELECT * FROM bamazon.auth WHERE username = ?";
+                let realpw;
+                con.query(check, [un], (e,r,f) => {
+                    thrw(e);
+                    realpw = r[0].pw;
+                    if(realpw === pw){
+                        manager.main();
+                        res(ch.cyanBright(br + hr + br + "Access Granted" + br));
+                    }
+                    else{
+                        cl(ch.redBright.bold(br + hr + br + "Incorrect Pw" + br + hr + br));
+                        con.end();
+                    }
+                });
+            }
+            authRun();
+        }); 
     },
+    // auth: () => {
+    //     i.prompt([
+    //         {
+    //             name: "user",
+    //             message: "Username: ",
+    //             type: "input",
+    //         },
+    //         {
+    //             name: "pw",
+    //             message: "Password",
+    //             type: "password",
+    //             mask: "",
+    //         },
+    //     ]).then((r) => {
+    //         let un = r.user;
+    //         let pw = r.pw;
+    //         let check = "SELECT * FROM bamazon.auth WHERE username = ?";
+    //         let realpw;
+    //         con.query(check, [un], (e,r,f) => {
+    //             thrw(e);
+    //             realpw = r[0].pw;
+    //             if(realpw === pw){
+    //                 manager.main();
+    //             }
+    //             else{
+    //                 cl(ch.redBright.bold(br + hr + br + "Incorrect Pw" + br + hr + br));
+    //                 con.end();
+    //             }
+    //         });
+    //     });
+    // },
     main: async function () {
         cl(ch.greenBright.bold(br + hr + br + br + "Welcome to the Manager Section of Bamazon" + br));
         let r = await i.prompt([
@@ -203,7 +239,8 @@ let manager = {
                     break;
                 case "Exit":
                 cl(ch.yellowBright(br + "See you later!" + br + hr + br));
-                    con.end();
+                con.end();
+                break;
             }
     },
     low: (x) => {
@@ -244,8 +281,8 @@ let manager = {
                 con.query(update, [newAmt, id], (e,r,f) => {
                     thrw(e);
                     // customer.list("*");
+                    //manager.main(); 
                     res(ch.greenBright(br + "You've successfully added your inventory" + br + hr));
-                    manager.main(); 
                 });
             });
         },
@@ -282,7 +319,6 @@ let manager = {
                 con.query(q, [name, dept, price, stock], (e,r,f) => {
                     thrw(e);
                     res(ch.greenBright(br + "You've successfully added your new product" + name + br + hr));
-                    manager.main();
                 });
             });
         },
@@ -321,7 +357,7 @@ let supervisor = {
                     }
                     else{
                         cl(ch.redBright.bold(br + hr + br + "Incorrect Pw" + br + hr + br));
-                        let done = kill();
+                        con.end();
                     }
                 });
             }
@@ -408,7 +444,8 @@ let supervisor = {
                 break;
 
             case "Exit":
-            let done = kill();
+            con.end();
+            break;
         }
     } 
 }
@@ -436,15 +473,9 @@ con.connect((e) => {
             case "Supervisor":
                 supervisor.auth();
                 break;
-            default:
-                break;
         }
     });
-    
-
-
-
-})
+});
 
 
 
@@ -491,7 +522,7 @@ let pullInfo = (itemId) => {
         "JOIN bamazon.dept AS dept "+
         "ON prod.department_name = dept.dept_name "+
         "WHERE item_id = " + itemId);
-        cl(pisql);
+        //cl(pisql);
         con.query(pisql, (e,r,f) => {
             let r0 = r[0];
             res({
