@@ -164,6 +164,10 @@ let manager = {
                 let realpw;
                 con.query(check, [un], (e,r,f) => {
                     thrw(e);
+                    if(r.length === 0){
+                        cl(ch.redBright.bold(br + hr + br + "Incorrect Pw" + br + hr + br));
+                        con.end();
+                    }
                     realpw = r[0].pw;
                     if(realpw === pw){
                         manager.main();
@@ -351,6 +355,10 @@ let supervisor = {
                 con.query(check, [un], (e,r,f) => {
                     thrw(e);
                     realpw = r[0].pw;
+                    if(r.length === 0){
+                        cl(ch.redBright.bold(br + hr + br + "Incorrect Pw" + br + hr + br));
+                        con.end();
+                    }
                     if(realpw === pw){
                         supervisor.run();
                         res(ch.cyanBright(br + hr + br + "Access Granted" + br));
