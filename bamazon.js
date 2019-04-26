@@ -173,119 +173,107 @@ let manager = {
             });
         });
     },
-    main: () => {
+    main: async function () {
         cl(ch.greenBright.bold(br + hr + br + br + "Welcome to the Manager Section of Bamazon" + br));
-        i.prompt([
+        let r = await i.prompt([
             {
                 name: "sel",
                 message: "What would you like to do?",
                 choices: ["View Products for Sale", "View Low Inventory", "Add to Inventory", "Add New Product", "Exit"],
                 type: "list",
             },
-        ]).then((r) => {
-            let sel = r.sel;
+        ]);
+        let sel = r.sel;
             switch (sel) {
                 case "View Products for Sale":
-                    customer.list("*");
-                    setTimeout(() => {
+                    let list = await customer.list("*");
                     manager.main();
-                }, 1000);
                     break;
                 case "View Low Inventory":
-                    manager.low(10);
-                    setTimeout(() => {
+                    let lowI = await manager.low(10);
                     manager.main();
-                }, 1000);
+                    break;
                 case "Add to Inventory":
-                    manager.add.inventory();
-                    // setTimeout(() => {
-                    //     manager.main();
-                    // }, 1000);
+                    let addI = await manager.add.inventory();
+                    manager.main();
                     break;
                 case "Add New Product":
                     manager.add.product();
-                    // setTimeout(() => {
-                    //     manager.main();
-                    // }, 1000);
+
                     break;
                 case "Exit":
                 cl(ch.yellowBright(br + "See you later!" + br + hr + br));
                     con.end();
             }
-        });
     },
     low: (x) => {
-        let q = "SELECT * FROM bamazon.products WHERE stock_quantity < ?";
-        con.query(q,[x], (e,r,f) => {
-            thrw(e);
-            cl(ch.cyanBright(br + "All Items with a stock lower than " + x));
-            ct(r);
-            cl(br);
+        return new Promise((res,rej) => {
+            let q = "SELECT * FROM bamazon.products WHERE stock_quantity < ?";
+            con.query(q,[x], (e,r,f) => {
+                thrw(e);
+                cl(ch.cyanBright(br + "All Items with a stock lower than " + x));
+                ct(r);
+                cl(br);
+                res(ch.greenBright(br + "This is all the low inventory" + br + hr));
+            });
         });
+
     },
     add: {
         inventory: () => {
-            customer.list("*");
-            setTimeout(() => {
-                cl(ch.magentaBright(br + "Please add your new inventory"));
-                i.prompt([
-                    {
-                        name: "id",
-                        message: "ID of the Item: ",
-                        type: "input",
-                    },
-                    {
-                        name: "amt",
-                        message: "Amount of inventory you'd like to add: ",
-                        type: "input",
-                    },
-                ]).then((r) => {
-                    let id = parseInt(r.id);
-                    let amt = parseInt(r.amt);
-                    customer.buy.byId(id);
-                    setTimeout(() => {
-                        let stock = customer.buy.stock;
-                            let newAmt = stock + amt;
-                            let update = "UPDATE bamazon.products SET stock_quantity = ? WHERE item_id = ?";
-                            con.query(update, [newAmt, id], (e,r,f) => {
-                                thrw(e);
-                                // customer.list("*");
-                                cl(ch.greenBright(br + "You've successfully added your inventory" + br + hr));
-                                setTimeout(() => {
-                                    manager.main();
-                                }, 1000);
-                            });
-                    }, 1000);
-
-
+            return new Promise( async (res,rej) => {
+                let list = await customer.list("*");
+                    cl(ch.magentaBright(br + "Please add your new inventory"));
+                let r = await i.prompt([
+                        {
+                            name: "id",
+                            message: "ID of the Item: ",
+                            type: "input",
+                        },
+                        {
+                            name: "amt",
+                            message: "Amount of inventory you'd like to add: ",
+                            type: "input",
+                        },
+                    ]);
+                let id = parseInt(r.id);
+                let amt = parseInt(r.amt);
+                let stock = await customer.buy.byId(id);
+                let newAmt = stock + amt;
+                let update = "UPDATE bamazon.products SET stock_quantity = ? WHERE item_id = ?";
+                con.query(update, [newAmt, id], (e,r,f) => {
+                    thrw(e);
+                    // customer.list("*");
+                    res(ch.greenBright(br + "You've successfully added your inventory" + br + hr));
+                    manager.main(); 
                 });
-            }, 1000);
-
+            });
         },
         product: () => {
-            cl(ch.magentaBright(br + "Please add your new product"));
-            i.prompt([
-                {
-                    name: "name",
-                    message: "Product Name: ",
-                    type: "input",
-                },
-                {
-                    name: "dept",
-                    message: "Product Department: ",
-                    type: "input",
-                },
-                {
-                    name: "price",
-                    message: "Product Price: ",
-                    type: "input",
-                },
-                {
-                    name: "stock",
-                    message: "Amount of Product in stock: ",
-                    type: "input",
-                },
-            ]).then((r) => {
+            return new Promise(async (res, rej) => {
+                cl(ch.magentaBright(br + "Please add your new product"));
+                let r = await i.prompt([
+                    {
+                        name: "name",
+                        message: "Product Name: ",
+                        type: "input",
+                    },
+                    {
+                        name: "dept",
+                        message: "Product Department: ",
+                        type: "input",
+                    },
+                    {
+                        name: "price",
+                        message: "Product Price: ",
+                        type: "input",
+                    },
+                    {
+                        name: "stock",
+                        message: "Amount of Product in stock: ",
+                        type: "input",
+                    },
+                ]);
                 let name = r.name;
                 let dept = r.dept;
                 let price = r.price;
@@ -293,9 +281,8 @@ let manager = {
                 let q = "INSERT INTO bamazon.products (product_name, department_name, sale_price, stock_quantity) VALUES (?,?,?,?)";
                 con.query(q, [name, dept, price, stock], (e,r,f) => {
                     thrw(e);
-                    setTimeout(() => {
-                        manager.main();
-                    }, 1000);
+                    res(ch.greenBright(br + "You've successfully added your new product" + name + br + hr));
+                    manager.main();
                 });
             });
         },
